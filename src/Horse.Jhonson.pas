@@ -30,7 +30,7 @@ begin
   LWebResponse := THorseHackResponse(Res).GetWebResponse;
   LContent := THorseHackResponse(Res).GetContent;
 
-  if LContent.InheritsFrom(TJSONValue) then
+   if Assigned(LContent) and LContent.InheritsFrom(TJSONValue) then
   begin
     LWebResponse.Content := TJSONValue(LContent).ToJSON;
     LWebResponse.ContentType := 'application/json';
