@@ -4,7 +4,7 @@ Middleware for parse JSON in HORSE
 Sample Horse Server
 ```delphi
 uses
-  Horse, Horse.Jhonson;
+  Horse, Horse.Jhonson, System.JSON;
 
 var
   App: THorse;
@@ -24,4 +24,5 @@ begin
     end);
 
   App.Start;
+end.
 ```
