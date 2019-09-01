@@ -1,0 +1,12 @@
+{
+	"name": "samples",
+	"description": "",
+	"version": "1.0.0",
+	"homepage": "",
+	"mainsrc": "./",
+	"projects": [],
+	"dependencies": {
+		"github.com/hashload/horse": "^1.6.7",
+		"github.com/hashload/jhonson": "^1.0.2"
+	}
+}

@@ -1,8 +1,9 @@
-# jhonson
-Middleware for parse JSON in HORSE
+program Samples;
 
-Sample Horse Server
-```delphi
+{$APPTYPE CONSOLE}
+
+{$R *.res}
+
 uses
   Horse, Horse.Jhonson, System.JSON;
 
@@ -25,4 +26,3 @@ begin
 
   App.Start;
 end.
-```

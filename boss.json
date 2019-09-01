@@ -2,11 +2,9 @@
 	"name": "jhonson",
 	"description": "",
 	"version": "1.0.0",
-	"private": false,
 	"homepage": "",
 	"mainsrc": "src/",
-	"supported": "xe+",
-	"dprojFile": "",
+	"projects": [],
 	"dependencies": {
 		"github.com/HashLoad/horse": "^1.2.2"
 	}

@@ -32,6 +32,6 @@ requires
   rtl;
 
 contains
-  Jhonson in 'src\Jhonson.pas';
+  Horse.Jhonson in 'src\Horse.Jhonson.pas';
 
 end.
