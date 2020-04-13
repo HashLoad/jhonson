@@ -25,16 +25,22 @@ begin
     THorseHackRequest(Req).SetBody(LJSON);
   end;
 
-  Next;
+  try
+    Next;
+  finally
 
-  LWebResponse := THorseHackResponse(Res).GetWebResponse;
-  LContent := THorseHackResponse(Res).GetContent;
+    LWebResponse := THorseHackResponse(Res).GetWebResponse;
+    LContent := THorseHackResponse(Res).GetContent;
 
-   if Assigned(LContent) and LContent.InheritsFrom(TJSONValue) then
-  begin
-    LWebResponse.Content := TJSONValue(LContent).ToJSON;
-    LWebResponse.ContentType := 'application/json';
+    if Assigned(LContent) and LContent.InheritsFrom(TJSONValue) then
+    begin
+      LWebResponse.Content := TJSONValue(LContent).ToJSON;
+      LWebResponse.ContentType := 'application/json';
+    end;
+
   end;
+
+
 end;
 
 end.
