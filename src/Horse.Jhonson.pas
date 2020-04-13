@@ -2,8 +2,7 @@ unit Horse.Jhonson;
 
 interface
 
-uses
-  Horse, System.Classes, System.JSON, Web.HTTPApp, System.SysUtils;
+uses Horse, System.Classes, System.JSON, Web.HTTPApp, System.SysUtils;
 
 procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 
@@ -18,8 +17,7 @@ var
 begin
   LWebRequest := THorseHackRequest(Req).GetWebRequest;
 
-  if (LWebRequest.MethodType in [mtPost, mtPut]) and
-    (LWebRequest.ContentType = 'application/json') then
+  if (LWebRequest.MethodType in [mtPost, mtPut]) and (LWebRequest.ContentType = 'application/json') then
   begin
     LJSON := TJSONObject.ParseJSONValue(Req.Body);
     THorseHackRequest(Req).SetBody(LJSON);
@@ -28,7 +26,6 @@ begin
   try
     Next;
   finally
-
     LWebResponse := THorseHackResponse(Res).GetWebResponse;
     LContent := THorseHackResponse(Res).GetContent;
 
@@ -37,10 +34,7 @@ begin
       LWebResponse.Content := TJSONValue(LContent).ToJSON;
       LWebResponse.ContentType := 'application/json';
     end;
-
   end;
-
-
 end;
 
 end.
