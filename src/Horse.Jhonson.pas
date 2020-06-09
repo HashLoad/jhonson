@@ -26,7 +26,11 @@ begin
   end;
 
   try
-    Next;
+    try
+      Next;
+    except
+      Exit;
+    end;
   finally
 
     LWebResponse := THorseHackResponse(Res).GetWebResponse;
