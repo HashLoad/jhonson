@@ -29,7 +29,7 @@ begin
     try
       Next;
     except
-      Exit;
+      raise;
     end;
   finally
 
