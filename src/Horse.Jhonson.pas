@@ -34,6 +34,10 @@ begin
   begin
     LWebResponse.Content := TJSONValue(LContent).ToJSON;
     LWebResponse.ContentType := 'application/json';
+  end
+  else if not Assigned(LContent) then
+  begin
+    LWebResponse.StatusCode := THttpStatus.NoContent.ToInteger;
   end;
 end;
 
