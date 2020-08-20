@@ -1,41 +1,46 @@
 unit Horse.Jhonson;
+{$IF DEFINED(FPC)}
+{$MODE DELPHI}{$H+}
+{$ENDIF}
 
 interface
 
-uses Horse, System.Classes, System.JSON, Web.HTTPApp, System.SysUtils;
+uses
+{$IF DEFINED(FPC)}
+  SysUtils, HTTPDefs, fpjson, jsonparser,
+{$ELSE}
+  System.Classes, System.JSON, System.SysUtils, Web.HTTPApp,
+{$ENDIF}
+  Horse;
 
-procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 
 implementation
 
-procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 var
-  LWebRequest: TWebRequest;
-  LWebResponse: TWebResponse;
+  LWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+  LWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
   LContent: TObject;
-  LJSON: TJSONValue;
+  LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
 begin
   LWebRequest := THorseHackRequest(Req).GetWebRequest;
 
-  if (LWebRequest.MethodType in [mtPost, mtPut]) and (LWebRequest.ContentType = 'application/json') then
+  if ({$IF DEFINED(FPC)} StringCommandToMethodType(LWebRequest.Method)
+    {$ELSE} LWebRequest.MethodType{$ENDIF} in [mtPost, mtPut]) and (LWebRequest.ContentType = 'application/json') then
   begin
-    LJSON := TJSONObject.ParseJSONValue(Req.Body);
+    LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
     THorseHackRequest(Req).SetBody(LJSON);
   end;
-
   try
-    try
-      Next;
-    except
-      raise;
-    end;
+    Next;
   finally
     LWebResponse := THorseHackResponse(Res).GetWebResponse;
     LContent := THorseHackResponse(Res).GetContent;
 
-    if Assigned(LContent) and LContent.InheritsFrom(TJSONValue) then
+    if Assigned(LContent) and LContent.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
     begin
-      LWebResponse.Content := TJSONValue(LContent).ToJSON;
+      LWebResponse.Content := {$IF DEFINED(FPC)}TJsonData(LContent).AsJSON {$ELSE}TJSONValue(LContent).ToJSON{$ENDIF};
       LWebResponse.ContentType := 'application/json';
     end;
   end;
