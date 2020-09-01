@@ -11,7 +11,7 @@ uses
 {$ELSE}
   System.Classes, System.JSON, System.SysUtils, Web.HTTPApp,
 {$ENDIF}
-  Horse;
+  Horse, Horse.Commons;
 
 procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 
