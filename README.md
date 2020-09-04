@@ -3,18 +3,12 @@ Middleware for parse JSON in HORSE
 
 Sample Horse Server
 ```delphi
-uses
-  Horse, Horse.Jhonson, System.JSON;
-
-var
-  App: THorse;
+uses Horse, Horse.Jhonson, System.JSON;
 
 begin
-  App := THorse.Create(9000);
+  THorse.Use(Jhonson);
 
-  App.Use(Jhonson);
-
-  App.Post('ping',
+  THorse.Post('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     var
       LBody: TJSONObject;
@@ -23,6 +17,5 @@ begin
       Res.Send<TJSONObject>(LBody);
     end);
 
-  App.Start;
-end.
+  THorse.Listen(9000);
 ```
