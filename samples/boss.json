@@ -3,10 +3,9 @@
 	"description": "",
 	"version": "1.0.0",
 	"homepage": "",
-	"mainsrc": "./",
+	"mainsrc": "src",
 	"projects": [],
 	"dependencies": {
-		"github.com/hashload/horse": "^1.6.7",
-		"github.com/hashload/jhonson": "^1.0.2"
+		"github.com/hashload/horse": "^v2.0.0"
 	}
 }
