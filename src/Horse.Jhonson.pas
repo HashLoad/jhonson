@@ -40,7 +40,7 @@ begin
 
     if Assigned(LContent) and LContent.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
     begin
-      LWebResponse.Content := {$IF DEFINED(FPC)}TJsonData(LContent).AsJSON {$ELSE}TJSONValue(LContent).ToJSON{$ENDIF};
+      LWebResponse.Content := {$IF DEFINED(FPC)}TJsonData(LContent).AsJSON {$ELSE}{$IF CompilerVersion > 27.0}TJSONValue(LContent).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF}{$ENDIF};
       LWebResponse.ContentType := 'application/json';
     end;
   end;
