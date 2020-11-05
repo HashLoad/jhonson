@@ -1,4 +1,5 @@
 unit Horse.Jhonson;
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$ENDIF}
@@ -13,15 +14,22 @@ uses
 {$ENDIF}
   Horse, Horse.Commons;
 
+function Jhonson: THorseCallback; overload;
+function Jhonson(const ACharset: string): THorseCallback; overload;
+
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
-function Jhonson(const ACharset: string = 'UTF-8'): THorseCallback;
 
 implementation
 
 var
   Charset: string;
 
-function Jhonson(const ACharset: string): THorseCallback;
+function Jhonson: THorseCallback; overload;
+begin
+  Result := Jhonson('UTF-8');
+end;
+
+function Jhonson(const ACharset: string): THorseCallback; overload;
 begin
   Charset := ACharset;
   Result := Middleware;
