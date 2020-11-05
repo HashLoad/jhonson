@@ -13,11 +13,21 @@ uses
 {$ENDIF}
   Horse, Horse.Commons;
 
-procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
+procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
+function Jhonson(const ACharset: string = 'UTF-8'): THorseCallback;
 
 implementation
 
-procedure Jhonson(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
+var
+  Charset: string;
+
+function Jhonson(const ACharset: string): THorseCallback;
+begin
+  Charset := ACharset;
+  Result := Middleware;
+end;
+
+procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 var
   LWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
   LWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
@@ -41,7 +51,7 @@ begin
     if Assigned(LContent) and LContent.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
     begin
       LWebResponse.Content := {$IF DEFINED(FPC)}TJsonData(LContent).AsJSON {$ELSE}{$IF CompilerVersion > 27.0}TJSONValue(LContent).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF}{$ENDIF};
-      LWebResponse.ContentType := 'application/json';
+      LWebResponse.ContentType := 'application/json; Charset=' + Charset;
     end;
   end;
 end;
