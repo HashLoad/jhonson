@@ -58,7 +58,11 @@ begin
 
     if Assigned(LContent) and LContent.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
     begin
-      LWebResponse.Content := {$IF DEFINED(FPC)}TJsonData(LContent).AsJSON {$ELSE}{$IF CompilerVersion > 27.0}TJSONValue(LContent).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF}{$ENDIF};
+      {$IF DEFINED(FPC)}
+      LWebResponse.ContentStream := TStringStream.Create(TJsonData(LContent).AsJSON);
+      {$ELSE}
+      LWebResponse.Content := {$IF CompilerVersion > 27.0}TJSONValue(LContent).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF};
+      {$ENDIF}
       LWebResponse.ContentType := 'application/json; charset=' + Charset;
     end;
   end;
