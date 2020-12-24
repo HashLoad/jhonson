@@ -8,7 +8,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, HTTPDefs, fpjson, jsonparser,
+  SysUtils, Classes, HTTPDefs, fpjson, jsonparser,
 {$ELSE}
   System.Classes, System.JSON, System.SysUtils, Web.HTTPApp,
 {$ENDIF}
