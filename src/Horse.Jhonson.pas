@@ -37,33 +37,25 @@ end;
 
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 var
-  LWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-  LWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-  LContent: TObject;
   LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
 begin
-  LWebRequest := THorseHackRequest(Req).GetWebRequest;
-
   if ({$IF DEFINED(FPC)} StringCommandToMethodType(LWebRequest.Method)
-    {$ELSE} LWebRequest.MethodType{$ENDIF} in [mtPost, mtPut]) and (LWebRequest.ContentType = 'application/json') then
+    {$ELSE} Req.RawWebRequest.MethodType{$ENDIF} in [mtPost, mtPut]) and (Req.RawWebRequest.ContentType = 'application/json') then
   begin
     LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
-    THorseHackRequest(Req).SetBody(LJSON);
+    Req.Body(LJSON);
   end;
   try
     Next;
   finally
-    LWebResponse := THorseHackResponse(Res).GetWebResponse;
-    LContent := THorseHackResponse(Res).GetContent;
-
-    if Assigned(LContent) and LContent.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
+    if (Res.Content <> nil) and Res.Content.InheritsFrom({$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF}) then
     begin
       {$IF DEFINED(FPC)}
       LWebResponse.ContentStream := TStringStream.Create(TJsonData(LContent).AsJSON);
       {$ELSE}
-      LWebResponse.Content := {$IF CompilerVersion > 27.0}TJSONValue(LContent).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF};
+      Res.RawWebResponse.Content := {$IF CompilerVersion > 27.0}TJSONValue(Res.Content).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF};
       {$ENDIF}
-      LWebResponse.ContentType := 'application/json; charset=' + Charset;
+      Res.RawWebResponse.ContentType := 'application/json; charset=' + Charset;
     end;
   end;
 end;
