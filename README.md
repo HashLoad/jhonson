@@ -6,7 +6,7 @@ Sample Horse Server
 uses Horse, Horse.Jhonson, System.JSON;
 
 begin
-  THorse.Use( Jhonson() );
+  THorse.Use(Jhonson());
 
   THorse.Post('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
