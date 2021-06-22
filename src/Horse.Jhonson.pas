@@ -40,7 +40,7 @@ var
   LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
 begin
   if ({$IF DEFINED(FPC)} StringCommandToMethodType(Req.RawWebRequest.Method)
-    {$ELSE} Req.RawWebRequest.MethodType{$ENDIF} in [mtPost, mtPut]) and (Req.RawWebRequest.ContentType = 'application/json') then
+    {$ELSE} Req.RawWebRequest.MethodType{$ENDIF} in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType = 'application/json') then
   begin
     LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
     Req.Body(LJSON);
