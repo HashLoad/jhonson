@@ -38,11 +38,8 @@ end;
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 var
   LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
-  LMethod: TMethodType;
 begin
-  LMethod := {$IF DEFINED(FPC)} StringCommandToMethodType(Req.RawWebRequest.Method); {$ELSE} Req.RawWebRequest.MethodType; {$ENDIF}
-
-  if (LMethod in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType = 'application/json') then
+  if (Req.MethodType in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType = 'application/json') then
   begin
     try
       LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
