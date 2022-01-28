@@ -39,12 +39,24 @@ procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED
 var
   LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
 begin
-  if ({$IF DEFINED(FPC)} StringCommandToMethodType(Req.RawWebRequest.Method)
-    {$ELSE} Req.RawWebRequest.MethodType{$ENDIF} in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType = 'application/json') then
+  if (Req.MethodType in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType = 'application/json') then
   begin
-    LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
+    try
+      LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
+    except
+      Res.Send('Invalid JSON').Status(THTTPStatus.BadRequest);
+      raise EHorseCallbackInterrupted.Create;
+    end;
+
+    if not Assigned(LJSON) then
+    begin
+      Res.Send('Invalid JSON').Status(THTTPStatus.BadRequest);
+      raise EHorseCallbackInterrupted.Create;
+    end;
+
     Req.Body(LJSON);
   end;
+
   try
     Next;
   finally
