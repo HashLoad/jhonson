@@ -2,6 +2,8 @@ modules/
 dist/
 static/
 **/Win32/
+**/lib/
+**/backup/
 **/Win64/
 **/Linux64/
 **/__history/
@@ -9,6 +11,7 @@ static/
 src/*.~*
 *.res
 *.exe
+*.lps
 *.dll
 *.bpl
 *.bpi

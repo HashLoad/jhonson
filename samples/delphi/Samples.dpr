@@ -1,7 +1,6 @@
 program Samples;
 
 {$APPTYPE CONSOLE}
-
 {$R *.res}
 
 uses Horse, Horse.Jhonson, System.JSON;
@@ -10,7 +9,7 @@ begin
   THorse.Use(Jhonson);
 
   THorse.Post('/ping',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    procedure(Req: THorseRequest; Res: THorseResponse)
     var
       LBody: TJSONObject;
     begin

@@ -8,7 +8,7 @@ uses
   {$ENDIF}{$ENDIF}
   Horse, Horse.Jhonson, fpjson, SysUtils;
 
-procedure PostPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+procedure PostPing(Req: THorseRequest; Res: THorseResponse);
 var
   LBody: TJSONObject;
 begin
@@ -18,8 +18,6 @@ end;
 
 begin
   THorse.Use(Jhonson);
-
   THorse.Post('/ping', PostPing);
-
   THorse.Listen(9000);
 end.
