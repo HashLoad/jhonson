@@ -39,7 +39,7 @@ procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED
 var
   LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
 begin
-  if (Req.MethodType in [mtPost, mtPut, mtPatch]) and (Req.RawWebRequest.ContentType.Contains('application/json')) then
+  if (Req.MethodType in [mtPost, mtPut, mtPatch]) and (Pos('application/json', Req.RawWebRequest.ContentType) > 0) then
   begin
     try
       LJSON := {$IF DEFINED(FPC)} GetJSON(Req.Body) {$ELSE}TJSONObject.ParseJSONValue(Req.Body){$ENDIF};
