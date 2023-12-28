@@ -65,7 +65,7 @@ begin
       {$IF DEFINED(FPC)}
       Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
       {$ELSE}
-      Res.RawWebResponse.Content := {$IF CompilerVersion > 27.0}TJSONValue(Res.Content).ToJSON{$ELSE}TJSONValue(LContent).ToString{$ENDIF};
+      Res.RawWebResponse.Content := TJSONValue(LContent).ToString;
       {$ENDIF}
       Res.RawWebResponse.ContentType := 'application/json; charset=' + Charset;
     end;
