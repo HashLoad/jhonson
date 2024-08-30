@@ -54,6 +54,11 @@ begin
       raise EHorseCallbackInterrupted.Create;
     end;
 
+    {$IF DEFINED(FPC)}
+    if Assigned(Req.Body<TObject>) then
+      Req.Body<TObject>.Free;
+    {$ENDIF}
+
     Req.Body(LJSON);
   end;
 
