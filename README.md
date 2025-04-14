@@ -1,5 +1,5 @@
 # jhonson
-<b>Jhonson</b> is a official middleware for working with JSON in APIs developed with the <a href="https://github.com/HashLoad/horse">Horse</a> framework.
+<b>Jhonson</b> is an official middleware for working with JSON in APIs developed with the <a href="https://github.com/HashLoad/horse">Horse</a> framework.
 <br>We created a channel on Telegram for questions and support:<br><br>
 <a href="https://t.me/hashload">
   <img src="https://img.shields.io/badge/telegram-join%20channel-7289DA?style=flat-square">
