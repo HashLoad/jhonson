@@ -70,7 +70,16 @@ begin
       {$IF DEFINED(FPC)}
       Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
       {$ELSE}
-      Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON;
+    		{$IF CompilerVersion >= 36}
+    		  if SameText(Charset, 'utf-8') then
+    			  ops := [TJSONValue.TJSONOutputOption.EncodeBelow32]
+    		  else
+    			  ops := [TJSONValue.TJSONOutputOption.EncodeBelow32, TJSONValue.TJSONOutputOption.EncodeAbove127];
+    
+    		  Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON(ops);
+    		{$ELSE}
+    		  Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON;
+    		{$ENDIF}
       {$ENDIF}
       Res.RawWebResponse.ContentType := 'application/json; charset=' + Charset;
     end;
