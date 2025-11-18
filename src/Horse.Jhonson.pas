@@ -37,9 +37,13 @@ end;
 
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF});
 var
-  LJSON: {$IF DEFINED(FPC)}TJsonData{$ELSE}TJSONValue{$ENDIF};
-  {$IF CompilerVersion >= 36}
-    LJSONOutputOption: TJSONValue.TJsonOutputOptions;
+  {$IF DEFINED(FPC)}
+    LJSON: TJsonData;
+  {$ELSE}
+    LJSON: TJSONValue;
+    {$IF CompilerVersion >= 36}
+      LJSONOutputOption: TJSONValue.TJsonOutputOptions;
+    {$ENDIF}
   {$ENDIF}
 begin
   if (Req.MethodType in [mtPost, mtPut, mtPatch]) and (Pos('application/json', Req.RawWebRequest.ContentType) > 0) then
