@@ -13,7 +13,7 @@ uses
   System.Net.Mime;
 
 const
-  URL = 'http://localhost:9091/json_object';
+  URL = 'http://127.0.0.1:9091/json_object';
 
 function GenerateJSON(ASizeInKB: Integer): string;
 var
