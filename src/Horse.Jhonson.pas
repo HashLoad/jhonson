@@ -214,7 +214,7 @@ begin
       Result := JhonsonFPCModern(ACharset, AErrorCallback);
     {$ELSE}
       GCharset := ACharset;
-      Result := MiddlewareFPCLegacy;
+      Result := THorseCallback(@MiddlewareFPCLegacy);
     {$ENDIF}
   {$ELSE}
     Result := JhonsonDelphi(ACharset, AErrorCallback);
