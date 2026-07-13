@@ -12,20 +12,160 @@ interface
 uses
   SysUtils, Classes,
   {$IF DEFINED(FPC)}
-  HTTPDefs, fpjson, jsonparser,
+  HTTPDefs, fpjson, jsonparser, TypInfo, Contnrs,
   {$ELSE}
-  System.JSON, Web.HTTPApp,
+  System.JSON, Web.HTTPApp, REST.Json,
   {$ENDIF}
   Horse, Horse.Commons;
 
 type
   TJhonsonErrorCallback = {$IF DEFINED(FPC) and not DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}TObject{$ELSE}reference to procedure(ARes: THorseResponse; const AError: string){$ENDIF};
 
+  THorseRequestHelper = class helper for THorseRequest
+  public
+    function BodyAs<T: class, constructor>: T;
+  end;
+
 function Jhonson: THorseCallback; overload;
 function Jhonson(const ACharset: string): THorseCallback; overload;
 function Jhonson(const ACharset: string; const AErrorCallback: TJhonsonErrorCallback): THorseCallback; overload;
 
 implementation
+
+{$IFDEF FPC}
+procedure JsonToClassFPC(const AJSONStr: string; AObject: TObject);
+var
+  LJSON: TJsonData;
+  LJSONObject: TJSONObject;
+  LPropList: PPropList;
+  LCount, I: Integer;
+  LPropInfo: PPropInfo;
+  LValue: TJSONData;
+begin
+  if AJSONStr = '' then
+    Exit;
+  LJSON := GetJSON(AJSONStr);
+  try
+    if not (LJSON is TJSONObject) then
+      Exit;
+    LJSONObject := TJSONObject(LJSON);
+    LCount := GetPropList(AObject.ClassInfo, tkProperties, nil);
+    if LCount > 0 then
+    begin
+      GetMem(LPropList, LCount * SizeOf(PPropInfo));
+      try
+        GetPropList(AObject.ClassInfo, tkProperties, LPropList);
+        for I := 0 to LCount - 1 do
+        begin
+          LPropInfo := LPropList^[I];
+          LValue := LJSONObject.Find(LPropInfo^.Name);
+          if Assigned(LValue) then
+          begin
+            case LPropInfo^.PropType^.Kind of
+              tkInteger: SetOrdProp(AObject, LPropInfo, LValue.AsInteger);
+              tkInt64: SetOrdProp(AObject, LPropInfo, LValue.AsInt64);
+              tkFloat: SetFloatProp(AObject, LPropInfo, LValue.AsFloat);
+              tkBool: SetOrdProp(AObject, LPropInfo, Ord(LValue.AsBoolean));
+              tkAString, tkWString, tkUString: SetStrProp(AObject, LPropInfo, LValue.AsString);
+            end;
+          end;
+        end;
+      finally
+        FreeMem(LPropList);
+      end;
+    end;
+  finally
+    LJSON.Free;
+  end;
+end;
+
+function ClassToJsonFPC(AObject: TObject): string;
+var
+  LPropList: PPropList;
+  LCount, I: Integer;
+  LPropInfo: PPropInfo;
+  LJSONObject: TJSONObject;
+  LJSONArray: TJSONArray;
+  LList: TObjectList;
+  LListItem: TObject;
+begin
+  Result := '{}';
+  if not Assigned(AObject) then
+    Exit;
+
+  if AObject.InheritsFrom(TObjectList) then
+  begin
+    LList := TObjectList(AObject);
+    LJSONArray := TJSONArray.Create;
+    try
+      for I := 0 to LList.Count - 1 do
+      begin
+        LListItem := LList.Items[I];
+        if Assigned(LListItem) then
+          LJSONArray.Add(GetJSON(ClassToJsonFPC(LListItem)));
+      end;
+      Result := LJSONArray.AsJSON;
+    finally
+      LJSONArray.Free;
+    end;
+    Exit;
+  end;
+
+  LJSONObject := TJSONObject.Create;
+  try
+    LCount := GetPropList(AObject.ClassInfo, tkProperties, nil);
+    if LCount > 0 then
+    begin
+      GetMem(LPropList, LCount * SizeOf(PPropInfo));
+      try
+        GetPropList(AObject.ClassInfo, tkProperties, LPropList);
+        for I := 0 to LCount - 1 do
+        begin
+          LPropInfo := LPropList^[I];
+          case LPropInfo^.PropType^.Kind of
+            tkInteger: LJSONObject.Add(LPropInfo^.Name, GetOrdProp(AObject, LPropInfo));
+            tkInt64: LJSONObject.Add(LPropInfo^.Name, GetInt64Prop(AObject, LPropInfo));
+            tkFloat: LJSONObject.Add(LPropInfo^.Name, GetFloatProp(AObject, LPropInfo));
+            tkBool: LJSONObject.Add(LPropInfo^.Name, Boolean(GetOrdProp(AObject, LPropInfo)));
+            tkAString, tkWString, tkUString: LJSONObject.Add(LPropInfo^.Name, GetStrProp(AObject, LPropInfo));
+          end;
+        end;
+      finally
+        FreeMem(LPropList);
+      end;
+    end;
+    Result := LJSONObject.AsJSON;
+  finally
+    LJSONObject.Free;
+  end;
+end;
+{$ENDIF}
+
+{ THorseRequestHelper }
+
+function THorseRequestHelper.BodyAs<T>: T;
+var
+  LKey: string;
+  LObj: TObject;
+begin
+  LKey := T.ClassName;
+  if not Self.State.TryGetValue(LKey, LObj) then
+  begin
+    {$IF DEFINED(FPC)}
+    LObj := T.Create;
+    try
+      JsonToClassFPC(Self.Body, LObj);
+    except
+      LObj.Free;
+      raise;
+    end;
+    {$ELSE}
+    LObj := TJson.JsonToObject<T>(Self.Body);
+    {$ENDIF}
+    Self.State.Add(LKey, LObj);
+  end;
+  Result := T(LObj);
+end;
 
 { ==============================================================================
   SEÇÃO DELPHI (XE7+ até Delphi 12+)
@@ -74,18 +214,27 @@ begin
       try
         Next;
       finally
-        if (Res.Content <> nil) and Res.Content.InheritsFrom(TJSONValue) then
+        if (Res.Content <> nil) then
         begin
-          {$IF CompilerVersion >= 36}
-            if SameText(ACharset, 'utf-8') then
-              LJSONOutputOption := [TJSONValue.TJSONOutputOption.EncodeBelow32]
-            else
-              LJSONOutputOption := [TJSONValue.TJSONOutputOption.EncodeBelow32, TJSONValue.TJSONOutputOption.EncodeAbove127];
-            Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON(LJSONOutputOption);
-          {$ELSE}
-            Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON;
-          {$ENDIF}
-          Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+          if Res.Content.InheritsFrom(TJSONValue) then
+          begin
+            {$IF CompilerVersion >= 36}
+              if SameText(ACharset, 'utf-8') then
+                LJSONOutputOption := [TJSONValue.TJSONOutputOption.EncodeBelow32]
+              else
+                LJSONOutputOption := [TJSONValue.TJSONOutputOption.EncodeBelow32, TJSONValue.TJSONOutputOption.EncodeAbove127];
+              Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON(LJSONOutputOption);
+            {$ELSE}
+              Res.RawWebResponse.Content := TJSONValue(Res.Content).ToJSON;
+            {$ENDIF}
+            Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+          end
+          else if not Res.Content.InheritsFrom(TStream) then
+          begin
+            Res.RawWebResponse.Content := TJson.ObjectToJsonString(Res.Content);
+            Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+            Res.Content(nil);
+          end;
         end;
       end;
     end;
@@ -142,10 +291,19 @@ begin
       try
         Next;
       finally
-        if (Res.Content <> nil) and Res.Content.InheritsFrom(TJsonData) then
+        if (Res.Content <> nil) then
         begin
-          Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
-          Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+          if Res.Content.InheritsFrom(TJsonData) then
+          begin
+            Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
+            Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+          end
+          else if not Res.Content.InheritsFrom(TStream) then
+          begin
+            Res.RawWebResponse.ContentStream := TStringStream.Create(ClassToJsonFPC(Res.Content));
+            Res.RawWebResponse.ContentType := 'application/json; charset=' + ACharset;
+            Res.Content(nil);
+          end;
         end;
       end;
     end;
@@ -184,10 +342,19 @@ begin
   try
     Next;
   finally
-    if (Res.Content <> nil) and Res.Content.InheritsFrom(TJsonData) then
+    if (Res.Content <> nil) then
     begin
-      Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
-      Res.RawWebResponse.ContentType := 'application/json; charset=' + GCharset;
+      if Res.Content.InheritsFrom(TJsonData) then
+      begin
+        Res.RawWebResponse.ContentStream := TStringStream.Create(TJsonData(Res.Content).AsJSON);
+        Res.RawWebResponse.ContentType := 'application/json; charset=' + GCharset;
+      end
+      else if not Res.Content.InheritsFrom(TStream) then
+      begin
+        Res.RawWebResponse.ContentStream := TStringStream.Create(ClassToJsonFPC(Res.Content));
+        Res.RawWebResponse.ContentType := 'application/json; charset=' + GCharset;
+        Res.Content(nil);
+      end;
     end;
   end;
 end;
