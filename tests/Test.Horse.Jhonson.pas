@@ -13,6 +13,16 @@ uses
   Horse;
 
 type
+  {$M+}
+  TTestEntity = class
+  private
+    FId: Integer;
+    FNome: string;
+  published
+    property Id: Integer read FId write FId;
+    property Nome: string read FNome write FNome;
+  end;
+
   TTestHorseJhonson = class(TTestCase)
   private
     FClient: THTTPClient;
@@ -32,6 +42,7 @@ type
     procedure TestEmptyBody;
     procedure TestResponseJSONSerialization;
     procedure TestCharsetHeaderUTF8;
+    procedure TestBodyAsClass;
     procedure TestPerformanceBenchmark;
   end;
 
@@ -55,24 +66,24 @@ begin
 
   // Rota basica para testar se o servidor responde
   THorse.Get('/ping',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    THorseCallback(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       Res.Send('pong');
-    end);
+    end));
 
   // Rota /json_object (retorna a string do JSON para compatibilidade e performance)
   THorse.Post('/json_object',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    THorseCallback(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     var
       LObj: TJSONObject;
     begin
       LObj := Req.Body<TJSONObject>;
       Res.Send(LObj.ToJSON);
-    end);
+    end));
 
   // Rota /json_array
   THorse.Post('/json_array',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    THorseCallback(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     var
       LArr: TJSONArray;
       I, LSum: Integer;
@@ -80,13 +91,13 @@ begin
       LArr := Req.Body<TJSONArray>;
       LSum := 0;
       for I := 0 to LArr.Count - 1 do
-        LSum := LSum + LArr.Items[I].AsType<Integer>;
+        LSum := LSum + StrToInt(LArr.Items[I].Value);
       Res.Send(LSum.ToString);
-    end);
+    end));
 
   // Rota /json_response (retorna string JSON e Content-Type explicito para compatibilidade robusta)
   THorse.Get('/json_response',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    THorseCallback(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     var
       LObj: TJSONObject;
     begin
@@ -98,7 +109,17 @@ begin
       finally
         LObj.Free;
       end;
-    end);
+    end));
+
+  // Rota /body_as_class (testa Req.BodyAs<T> e Res.Send de objeto customizado)
+  THorse.Post('/body_as_class',
+    THorseCallback(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    var
+      LEntity: TTestEntity;
+    begin
+      LEntity := Req.BodyAs<TTestEntity>;
+      Res.Send<TTestEntity>(LEntity);
+    end));
 
   // Inicializar o servidor em thread separada
   FServerThread := TThread.CreateAnonymousThread(
@@ -243,6 +264,25 @@ begin
   CheckTrue(Pos('charset=UTF-8', LContentType) > 0, 'Deveria retornar Content-Type com UTF-8');
 end;
 
+procedure TTestHorseJhonson.TestBodyAsClass;
+var
+  LResponse: IHTTPResponse;
+  LStream: TStringStream;
+  LHeaders: TNetHeaders;
+begin
+  LStream := TStringStream.Create('{"id":123,"nome":"Antigravity"}', TEncoding.UTF8);
+  try
+    SetLength(LHeaders, 1);
+    LHeaders[0] := TNetHeader.Create('Content-Type', 'application/json');
+    LResponse := FClient.Post(BASE_URL + '/body_as_class', LStream, nil, LHeaders);
+    CheckEquals(200, LResponse.StatusCode, 'Status do POST de classe invalido: ' + LResponse.ContentAsString);
+    CheckTrue(Pos('"id":123', LResponse.ContentAsString) > 0, 'Propriedade Id nao serializada corretamente');
+    CheckTrue(Pos('"nome":"Antigravity"', LResponse.ContentAsString) > 0, 'Propriedade Nome nao serializada corretamente');
+  finally
+    LStream.Free;
+  end;
+end;
+
 procedure TTestHorseJhonson.TestPerformanceBenchmark;
 var
   LPayload: string;
@@ -251,15 +291,15 @@ var
   LTotalMs: Int64;
   
   procedure RunCarga(const ALabel: string; ARequests: Integer; ASizeKB: Integer);
+  var
+    LProc: TProc<Integer>;
   begin
     LPayload := StringOfChar('x', ASizeKB * 1024 - 15);
     LPayload := '{"ping":"' + LPayload + '"}';
     LSuccessCount := 0;
     LFailedCount := 0;
     
-    LStopwatch := TStopwatch.StartNew;
-    TParallel.For(1, ARequests,
-      procedure(Idx: Integer)
+    LProc := procedure(Idx: Integer)
       var
         LLocalClient: THTTPClient;
         LLocalStream: TStringStream;
@@ -284,7 +324,10 @@ var
           LLocalStream.Free;
           LLocalClient.Free;
         end;
-      end);
+      end;
+
+    LStopwatch := TStopwatch.StartNew;
+    TParallel.For(1, ARequests, LProc);
     LStopwatch.Stop;
     LTotalMs := LStopwatch.ElapsedMilliseconds;
     
