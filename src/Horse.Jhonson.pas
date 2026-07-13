@@ -30,6 +30,11 @@ function Jhonson: THorseCallback; overload;
 function Jhonson(const ACharset: string): THorseCallback; overload;
 function Jhonson(const ACharset: string; const AErrorCallback: TJhonsonErrorCallback): THorseCallback; overload;
 
+{$IFDEF FPC}
+procedure JsonToClassFPC(const AJSONStr: string; AObject: TObject);
+function ClassToJsonFPC(AObject: TObject): string;
+{$ENDIF}
+
 implementation
 
 {$IFDEF FPC}
